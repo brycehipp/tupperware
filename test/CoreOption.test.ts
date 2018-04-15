@@ -104,6 +104,27 @@ describe('CoreOption', () => {
     );
   });
 
+  it('should satisfy Monad laws', () => {
+    const one = CoreOption.some(1);
+    const double = x => CoreOption.of(x * 2);
+    
+    // left identity
+    // M.of(a).chain(f) is equivalent to f(a)
+    expect(
+      CoreOption.of(1).chain(double)
+    ).toEqual(
+      double(1)
+    );
+
+    // right identity
+    // m.chain(M.of) is equivalent to m
+    expect(
+      one.chain(CoreOption.of)
+    ).toEqual(
+      one
+    );
+  });
+
   it('should have from method', () => {
     const something = CoreOption.from(1);
     const nothing = CoreOption.from(null);

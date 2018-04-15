@@ -1,3 +1,5 @@
+import Option from './core/Option';
+
 /**
  * An interface describing the argument passed to   [[OptionT]]'s `match` function.
  */
@@ -498,8 +500,11 @@ export default abstract class OptionT<T> {
  * inside the same `OptionT` API defined by   [[OptionT]].
  */
 class None extends OptionT<any> {
+  private innerOption: Option<any>;
+
   constructor() {
     super();
+    this.innerOption = Option.empty();
   }
 
   isSome(): boolean {

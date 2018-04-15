@@ -108,4 +108,147 @@ describe('#OptionT', () => {
     expectANone(twoAgain);
     expectANone(nopeAgain);
   });
+
+  it('should satisfy Functor laws', () => {
+    const one = OptionT.some(1);
+    const none = OptionT.none();
+
+    // identity
+    // u.map(a => a) is equivalent to u
+    expect(one.map(x => x)).toEqual(one);
+    expect(none.map(x => x)).toEqual(none);
+
+    const f = x => x * 2;
+    const g = x => x + 1;
+
+    // composition
+    // u.map(x => f(g(x))) is equivalent to u.map(g).map(f)
+    expect(one.map(x => f(g(x)))).toEqual(one.map(g).map(f));
+    expect(none.map(x => f(g(x)))).toEqual(none.map(g).map(f));
+  });
+
+  it('should satisfy Apply laws', () => {
+    const one = OptionT.some(1);
+    const two = OptionT.some(2);
+    const three = OptionT.some(3);
+    const none = OptionT.none();
+
+    const add2 = OptionT.some(x => x + 2);
+    const double = OptionT.some(x => x * 2);
+
+    expect(one.mapBy(double)).toEqual(two);
+    expect(none.mapBy(double)).toEqual(none);
+
+    // composition
+    // v.ap(u.ap(a.map(f => g => x => f(g(x))))) is equivalent to v.ap(u).ap(a)
+    expect(
+      one.mapBy(add2.mapBy(double.map(h => i => x => h(i(x)))))
+    ).toEqual(
+      one.mapBy(add2).mapBy(double)
+    );
+  });
+
+  it('should satisfy Applicative laws', () => {
+    const one = OptionT.some(1);
+    const double = x => x * 2;
+    const add2 = OptionT.some(x => x + 2);
+
+    // identity
+    // v.ap(A.of(x => x)) is equivalent to v
+    expect(one.mapBy(OptionT.some(x => x))).toEqual(one);
+
+    // homomorphism
+    // A.of(x).ap(A.of(f)) is equivalent to A.of(f(x))
+    expect(
+      OptionT.some(1).mapBy(OptionT.some(double))
+    ).toEqual(
+      OptionT.some(double(1))
+    );
+
+    // interchange
+    // A.of(y).ap(u) is equivalent to u.ap(A.of(f => f(y)))
+    expect(
+      OptionT.some(double).mapBy(add2)
+    ).toEqual(
+      add2.mapBy(OptionT.some(f => f(double)))
+    );
+  });
+
+  it('should satisfy Chain laws', () => {
+    const one = OptionT.some(1);
+    const double = x => OptionT.some(x * 2);
+    function halve(x): OptionT<number> {
+      return x % 2 === 0 ? OptionT.some(x / 2) : OptionT.none();
+    }
+
+    // associativity
+    // m.chain(f).chain(g) is equivalent to m.chain(x => f(x).chain(g))
+    expect(
+      one.flatMap(double).flatMap(halve)
+    ).toEqual(
+      one.flatMap(x => double(x).flatMap(halve))
+    );
+
+    expect(
+      one.flatMap(halve).flatMap(double)
+    ).toEqual(
+      one.flatMap(x => halve(x).flatMap(double))
+    );
+  });
+
+  it('should satisfy Monad laws', () => {
+    const one = OptionT.some(1);
+    const double = x => OptionT.some(x * 2);
+
+    // left identity
+    // M.of(a).chain(f) is equivalent to f(a)
+    expect(
+      OptionT.some(1).flatMap(double)
+    ).toEqual(
+      double(1)
+    );
+
+    // right identity
+    // m.chain(M.of) is equivalent to m
+    expect(
+      one.flatMap(OptionT.of)
+    ).toEqual(
+      one
+    );
+  });
+
+  it('should satisfy Semigroup laws', () => {
+    const one = OptionT.some(1);
+    const two = OptionT.some(2);
+    const three = OptionT.some(3);
+    const none = OptionT.none();
+
+    expect(
+      one.or(two).or(three)
+    ).toEqual(
+      one.or(two.or(three))
+    );
+
+    expect(
+      one.or(none).or(three)
+    ).toEqual(
+      one.or(none.or(three))
+    );
+  });
+
+  it('should satisfy Monoid laws', () => {
+    const one = OptionT.some(1);
+
+    expect(
+      one.or(OptionT.none())
+    ).toEqual(
+      one
+    );
+
+    expect(
+      OptionT.none().or(one)
+    ).toEqual(
+      one
+    );
+  });
 });

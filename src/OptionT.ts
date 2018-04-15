@@ -1,4 +1,4 @@
-import Option from './core/Option';
+import FlOption from './fantasy-land/FlOption';
 
 /**
  * An interface describing the argument passed to   [[OptionT]]'s `match` function.
@@ -19,25 +19,32 @@ export default abstract class OptionT<T> {
   // tslint:disable-next-line:no-empty
   constructor() {}
 
-  static of<T>(value?: T): OptionT<T> {
+  static of<A>(value?: A): OptionT<A> {
     if (value === null || typeof value === 'undefined') {
       return new None();
     }
     return new Some(value);
   }
 
-  static some<T>(value: T): OptionT<T> {
+  static some<A>(value: A): OptionT<A> {
     if (value === null || typeof value === 'undefined') {
       throw Error('Cannot create a Some of a null or undefined value');
     }
     return new Some(value);
   }
 
-  static none<T>(value?: T): OptionT<T> {
+  static none<A>(value?: A): OptionT<A> {
     if (value === null || typeof value === 'undefined') {
       return new None();
     }
     throw Error('Cannot create a None of a non-null or undefined value');
+  }
+
+  toFantasyLand(): FlOption<T> {
+    return this.match({
+      some: (val: T) => FlOption.of(val),
+      none: () => FlOption.empty(),
+    });
   }
 
   /**
@@ -226,6 +233,28 @@ export default abstract class OptionT<T> {
    * @returns {U}
    */
   abstract mapOrElse<U>(other: () => U, func: (val: T) => U): U;
+
+  /**
+   * Applies the function contained in `other` to the value contained
+   * in `this`.  The result is wrapped in an OptionT and returned.
+   *
+   * Returns `None` if either `this` or `other` is a `None`.
+   *
+   * ```
+   * const double = OptionT.some(x => x * 2);
+   * const two = OptionT.some(2);
+   *
+   * console.log(two.mapBy(double).toString()); // "Some( 4 )"
+   *
+   * const nope = OptionT.none();
+   *
+   * console.log(nope.mapBy(double).toString()); // "None()"
+   * ```
+   *
+   * @param {OptionT<(val: T) => U>} other
+   * @returns {OptionT<U>}
+   */
+  abstract mapBy<U>(other: OptionT<(val: T) => U>): OptionT<U>;
 
   /**
    * Returns a `None` value if this   [[OptionT]] is a `None`; otherwise returns `other`.
@@ -500,11 +529,8 @@ export default abstract class OptionT<T> {
  * inside the same `OptionT` API defined by   [[OptionT]].
  */
 class None extends OptionT<any> {
-  private innerOption: Option<any>;
-
   constructor() {
     super();
-    this.innerOption = Option.empty();
   }
 
   isSome(): boolean {
@@ -545,6 +571,10 @@ class None extends OptionT<any> {
 
   mapOrElse<T, U>(other: () => U, func: (val: T) => U): U {
     return other();
+  }
+
+  mapBy<U>(other: OptionT<(val: any) => U>): OptionT<U> {
+    return OptionT.none();
   }
 
   and<U>(other: OptionT<U>): OptionT<U> {
@@ -643,6 +673,10 @@ class Some<T> extends OptionT<T> {
 
   mapOrElse<U>(other: () => U, func: (val: T) => U): U {
     return func(this.value);
+  }
+
+  mapBy<U>(other: OptionT<(val: any) => U>): OptionT<U> {
+    return other.map(f => f(this.value));
   }
 
   and<U>(other: OptionT<U>): OptionT<U> {

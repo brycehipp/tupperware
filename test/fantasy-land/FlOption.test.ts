@@ -1,9 +1,11 @@
-import Option from '../../src/core/Option';
+import FlOption from '../../src/fantasy-land/FlOption';
+import { OptionT } from '../../src/nullshield';
+import fl from 'fantasy-land';
 
-describe('Option', () => {
+describe('FlOption', () => {
   it('should satisfy Functor laws', () => {
-    const one = Option.of(1);
-    const none = Option.empty();
+    const one = FlOption.of(1);
+    const none = FlOption.empty();
 
     expect(one).toHaveProperty('map');
     expect(one.map).toBeInstanceOf(Function);
@@ -26,10 +28,10 @@ describe('Option', () => {
   });
 
   it('should satisfy Apply laws', () => {
-    const one = Option.of(1);
-    const two = Option.of(2);
-    const three = Option.of(3);
-    const none = Option.empty();
+    const one = FlOption.of(1);
+    const two = FlOption.of(2);
+    const three = FlOption.of(3);
+    const none = FlOption.empty();
 
     expect(one).toHaveProperty('ap');
     expect(one.ap).toBeInstanceOf(Function);
@@ -37,8 +39,8 @@ describe('Option', () => {
     expect(none).toHaveProperty('ap');
     expect(none.ap).toBeInstanceOf(Function);
 
-    const add2 = Option.of(x => x + 2);
-    const double = Option.of(x => x * 2);
+    const add2 = FlOption.of(x => x + 2);
+    const double = FlOption.of(x => x * 2);
 
     expect(one.ap(double)).toEqual(two);
     expect(none.ap(double)).toEqual(none);
@@ -53,40 +55,40 @@ describe('Option', () => {
   });
 
   it('should satisfy Applicative laws', () => {
-    expect(Option).toHaveProperty('of');
-    expect(Option.of).toBeInstanceOf(Function);
+    expect(FlOption).toHaveProperty('of');
+    expect(FlOption.of).toBeInstanceOf(Function);
 
-    const one = Option.of(1);
+    const one = FlOption.of(1);
     const double = x => x * 2;
-    const add2 = Option.of(x => x + 2);
+    const add2 = FlOption.of(x => x + 2);
 
     // identity
     // v.ap(A.of(x => x)) is equivalent to v
-    expect(one.ap(Option.of(x => x))).toEqual(one);
+    expect(one.ap(FlOption.of(x => x))).toEqual(one);
 
     // homomorphism
     // A.of(x).ap(A.of(f)) is equivalent to A.of(f(x))
     expect(
-      Option.of(1).ap(Option.of(double))
+      FlOption.of(1).ap(FlOption.of(double))
     ).toEqual(
-      Option.of(double(1))
+      FlOption.of(double(1))
     );
 
     // interchange
     // A.of(y).ap(u) is equivalent to u.ap(A.of(f => f(y)))
     expect(
-      Option.of(double).ap(add2)
+      FlOption.of(double).ap(add2)
     ).toEqual(
-      add2.ap(Option.of(f => f(double)))
+      add2.ap(FlOption.of(f => f(double)))
     );
   });
 
   it('should satisfy Chain laws', () => {
 
-    const one = Option.of(1);
-    const double = x => Option.of(x * 2);
-    function halve(x): Option<number> {
-      return x % 2 === 0 ? Option.of(x / 2) : Option.empty();
+    const one = FlOption.of(1);
+    const double = x => FlOption.of(x * 2);
+    function halve(x): FlOption<number> {
+      return x % 2 === 0 ? FlOption.of(x / 2) : FlOption.empty();
     }
 
     // associativity
@@ -105,13 +107,13 @@ describe('Option', () => {
   });
 
   it('should satisfy Monad laws', () => {
-    const one = Option.of(1);
-    const double = x => Option.of(x * 2);
+    const one = FlOption.of(1);
+    const double = x => FlOption.of(x * 2);
 
     // left identity
     // M.of(a).chain(f) is equivalent to f(a)
     expect(
-      Option.of(1).chain(double)
+      FlOption.of(1).chain(double)
     ).toEqual(
       double(1)
     );
@@ -119,17 +121,17 @@ describe('Option', () => {
     // right identity
     // m.chain(M.of) is equivalent to m
     expect(
-      one.chain(Option.of)
+      one.chain(FlOption.of)
     ).toEqual(
       one
     );
   });
 
   it('should satisfy Semigroup laws', () => {
-    const one = Option.of(1);
-    const two = Option.of(2);
-    const three = Option.of(3);
-    const none = Option.empty();
+    const one = FlOption.of(1);
+    const two = FlOption.of(2);
+    const three = FlOption.of(3);
+    const none = FlOption.empty();
 
     expect(
       one.concat(two).concat(three)
@@ -145,18 +147,32 @@ describe('Option', () => {
   });
 
   it('should satisfy Monoid laws', () => {
-    const one = Option.of(1);
+    const one = FlOption.of(1);
 
     expect(
-      one.concat(Option.empty())
+      one.concat(FlOption.empty())
     ).toEqual(
       one
     );
 
     expect(
-      Option.empty().concat(one)
+      FlOption.empty().concat(one)
     ).toEqual(
       one
+    );
+  });
+
+  it('should be creatable from an OptionT', () => {
+    expect(
+      OptionT.some(1).toFantasyLand()
+    ).toEqual(
+      FlOption.of(1)
+    );
+
+    expect(
+      OptionT.none().toFantasyLand()
+    ).toEqual(
+      FlOption.empty()
     );
   });
 });
